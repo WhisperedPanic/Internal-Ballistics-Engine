@@ -10,7 +10,7 @@ let propellantData = [];
  */
 export async function init() {
     try {
-        const response = await fetch('./propellants.json');
+        const response = await fetch('propellants.json');
         if (!response.ok) throw new Error("Failed to load propellant data");
         propellantData = await response.json();
         populatePropellantSelect();
