@@ -5,7 +5,7 @@
   {"id": "cluster-2-1", "name": "Hodgdon H335", "cluster": "Fast", "B": 0.000035, "n": 0.80, "rho_s": 1620, "lambda": 980000, "eta": 0.0010, "grain_type": "Spherical"},
   {"id": "cluster-2-2", "name": "IMR 2000-MR", "cluster": "Fast", "B": 0.000032, "n": 0.81, "rho_s": 1610, "lambda": 990000, "eta": 0.0010, "grain_type": "Extruded"},
   {"id": "cluster-2-3", "name": "Accurate 2230", "cluster": "Fast", "B": 0.000030, "n": 0.79, "rho_s": 1600, "lambda": 970000, "eta": 0.0010, "grain_type": "Extruded"},
-  {"id": "cluster-3-1", "name": "IMR 3031", "cluster": "Medium Fast", "B": 0.000018, "n": 0.83, "rho_s": 1630, "lambda": 1000000, "eta": 0.0010, "grain_type": "Extruded"}
+  {"id": "cluster-3-1", "name": "IMR 3031", "cluster": "Medium Fast", "B": 0.000018, "n": 0.83, "rho_s": 1630, "lambda": 1000000, "eta": 0.0010, "grain_type": "Extruded"},
   {"id": "cluster-3-2", "name": "Hodgdon Varget", "cluster": "Medium Fast", "B": 0.000016, "n": 0.84, "rho_s": 1640, "lambda": 1010000, "eta": 0.0010, "grain_type": "Extruded"},
   {"id": "cluster-3-3", "name": "Vihtavuori N133", "cluster": "Medium Fast", "B": 0.000015, "n": 0.82, "rho_s": 1620, "lambda": 1005000, "eta": 0.0010, "grain_type": "Extruded"},
   {"id": "cluster-4-1", "name": "IMR 4895", "cluster": "Medium", "B": 0.000012, "n": 0.85, "rho_s": 1600, "lambda": 1000000, "eta": 0.0010, "grain_type": "Extruded"},
