@@ -9,8 +9,8 @@ let propellantData = [];
  * Initializes the module by fetching external data and populating UI.
  */
 export async function init() {
-    try {
-        const response = await fetch('propellants.json');
+    try { 
+        const response = await fetch(new URL('./propellants.json', import.meta.url));
         if (!response.ok) throw new Error("Failed to load propellant data");
         propellantData = await response.json();
         populatePropellantSelect();
