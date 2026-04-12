@@ -3,10 +3,6 @@
 // 
 // Purpose: Render simulation results to DOM and Chart.js canvases
 // Handles: stats display, time-series plots, imperial conversions
-// 
-// Usage:
-//   import { render, renderStats, clearResults } from './outputRenderer.js';
-//   render(results);  // results from runSimulation()
 
 // ============================================================================
 // CHART INSTANCES (Persist to enable updates/destroy)
@@ -26,8 +22,6 @@ const chartInstances = {
 /**
  * Render full simulation results (charts + stats)
  * @param {object} results - Simulation results from runSimulation()
- * @param {object} results.data - Array of {t_ms, p_psi, v_fps, z_pct, x_mm}
- * @param {object} results.stats - Summary statistics
  */
 export function render(results) {
   if (!results || !results.data || !results.stats) {
@@ -35,16 +29,13 @@ export function render(results) {
     return;
   }
   
-  // Show results container
   const resultsContainer = document.getElementById('results-container');
   if (resultsContainer) {
     resultsContainer.style.display = 'block';
     resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   
-  // Render all charts
   renderCharts(results.data);
-  
   console.log('✓ Results rendered successfully');
 }
 
@@ -64,7 +55,6 @@ export function renderStats(stats) {
     return;
   }
   
-  // Build comparison display if present (from solver comparison)
   let comparisonHtml = '';
   if (stats.comparison) {
     const comp = stats.comparison;
@@ -85,7 +75,6 @@ export function renderStats(stats) {
     `;
   }
   
-  // Build solver info badge
   const solverBadge = stats.solver 
     ? `<span class="badge badge-info" style="margin-left: 10px;">${stats.solver}</span>` 
     : '';
@@ -139,14 +128,12 @@ export function renderCharts(data) {
     return;
   }
   
-  // Extract arrays for Chart.js
   const labels = data.map(d => d.t_ms.toFixed(2));
   const pressureData = data.map(d => d.p_psi);
   const velocityData = data.map(d => d.v_fps);
   const burnData = data.map(d => d.z_pct);
   const positionData = data.map(d => d.x_mm);
   
-  // Render each chart
   renderPressureChart(labels, pressureData);
   renderVelocityChart(labels, velocityData);
   renderBurnChart(labels, burnData);
@@ -154,19 +141,13 @@ export function renderCharts(data) {
 }
 
 // ============================================================================
-// INDIVIDUAL CHART RENDERERS
+// INDIVIDUAL CHART RENDERERS (Private)
 // ============================================================================
 
-/**
- * Render chamber pressure vs time chart
- * @param {string[]} labels - Time labels (ms)
- * @param {number[]} data - Pressure values (PSI)
- */
 function renderPressureChart(labels, data) {
   const ctx = getCanvasContext('chart-pressure');
   if (!ctx) return;
   
-  // Destroy existing chart if present
   if (chartInstances.pressure) {
     chartInstances.pressure.destroy();
   }
@@ -190,15 +171,9 @@ function renderPressureChart(labels, data) {
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: {
-          display: true,
-          position: 'top'
-        },
+        legend: { display: true, position: 'top' },
         tooltip: {
           callbacks: {
             label: (context) => `Pressure: ${context.parsed.y.toFixed(0)} PSI`
@@ -206,32 +181,13 @@ function renderPressureChart(labels, data) {
         }
       },
       scales: {
-        x: {
-          title: {
-            display: true,
-            text: 'Time (ms)'
-          },
-          ticks: {
-            maxTicksLimit: 10
-          }
-        },
-        y: {
-          title: {
-            display: true,
-            text: 'Pressure (PSI)'
-          },
-          beginAtZero: true
-        }
+        x: { title: { display: true, text: 'Time (ms)' }, ticks: { maxTicksLimit: 10 } },
+        y: { title: { display: true, text: 'Pressure (PSI)' }, beginAtZero: true }
       }
     }
   });
 }
 
-/**
- * Render projectile velocity vs time chart
- * @param {string[]} labels - Time labels (ms)
- * @param {number[]} data - Velocity values (FPS)
- */
 function renderVelocityChart(labels, data) {
   const ctx = getCanvasContext('chart-velocity');
   if (!ctx) return;
@@ -259,15 +215,9 @@ function renderVelocityChart(labels, data) {
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: {
-          display: true,
-          position: 'top'
-        },
+        legend: { display: true, position: 'top' },
         tooltip: {
           callbacks: {
             label: (context) => `Velocity: ${context.parsed.y.toFixed(0)} FPS`
@@ -275,32 +225,13 @@ function renderVelocityChart(labels, data) {
         }
       },
       scales: {
-        x: {
-          title: {
-            display: true,
-            text: 'Time (ms)'
-          },
-          ticks: {
-            maxTicksLimit: 10
-          }
-        },
-        y: {
-          title: {
-            display: true,
-            text: 'Velocity (FPS)'
-          },
-          beginAtZero: true
-        }
+        x: { title: { display: true, text: 'Time (ms)' }, ticks: { maxTicksLimit: 10 } },
+        y: { title: { display: true, text: 'Velocity (FPS)' }, beginAtZero: true }
       }
     }
   });
 }
 
-/**
- * Render propellant burn fraction vs time chart
- * @param {string[]} labels - Time labels (ms)
- * @param {number[]} data - Burn fraction values (%)
- */
 function renderBurnChart(labels, data) {
   const ctx = getCanvasContext('chart-burn');
   if (!ctx) return;
@@ -328,15 +259,9 @@ function renderBurnChart(labels, data) {
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: {
-          display: true,
-          position: 'top'
-        },
+        legend: { display: true, position: 'top' },
         tooltip: {
           callbacks: {
             label: (context) => `Burned: ${context.parsed.y.toFixed(1)}%`
@@ -344,33 +269,13 @@ function renderBurnChart(labels, data) {
         }
       },
       scales: {
-        x: {
-          title: {
-            display: true,
-            text: 'Time (ms)'
-          },
-          ticks: {
-            maxTicksLimit: 10
-          }
-        },
-        y: {
-          title: {
-            display: true,
-            text: 'Burn Fraction (%)'
-          },
-          beginAtZero: true,
-          max: 100
-        }
+        x: { title: { display: true, text: 'Time (ms)' }, ticks: { maxTicksLimit: 10 } },
+        y: { title: { display: true, text: 'Burn Fraction (%)' }, beginAtZero: true, max: 100 }
       }
     }
   });
 }
 
-/**
- * Render pressure vs projectile position chart
- * @param {number[]} positionData - Position values (mm)
- * @param {number[]} pressureData - Pressure values (PSI)
- */
 function renderPressurePositionChart(positionData, pressureData) {
   const ctx = getCanvasContext('chart-pressure-position');
   if (!ctx) return;
@@ -398,15 +303,9 @@ function renderPressurePositionChart(positionData, pressureData) {
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: {
-          display: true,
-          position: 'top'
-        },
+        legend: { display: true, position: 'top' },
         tooltip: {
           callbacks: {
             label: (context) => `Pressure: ${context.parsed.y.toFixed(0)} PSI @ ${context.label} mm`
@@ -414,22 +313,8 @@ function renderPressurePositionChart(positionData, pressureData) {
         }
       },
       scales: {
-        x: {
-          title: {
-            display: true,
-            text: 'Projectile Position (mm)'
-          },
-          ticks: {
-            maxTicksLimit: 10
-          }
-        },
-        y: {
-          title: {
-            display: true,
-            text: 'Pressure (PSI)'
-          },
-          beginAtZero: true
-        }
+        x: { title: { display: true, text: 'Projectile Position (mm)' }, ticks: { maxTicksLimit: 10 } },
+        y: { title: { display: true, text: 'Pressure (PSI)' }, beginAtZero: true }
       }
     }
   });
@@ -439,11 +324,6 @@ function renderPressurePositionChart(positionData, pressureData) {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * Get CanvasRenderingContext2D from canvas element ID
- * @param {string} canvasId - Canvas element ID
- * @returns {CanvasRenderingContext2D|null}
- */
 function getCanvasContext(canvasId) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) {
@@ -455,22 +335,18 @@ function getCanvasContext(canvasId) {
 
 /**
  * Clear all results from DOM (charts + stats)
- * Call before running new simulation
  */
 export function clearResults() {
-  // Hide results container
   const resultsContainer = document.getElementById('results-container');
   if (resultsContainer) {
     resultsContainer.style.display = 'none';
   }
   
-  // Clear stats container
   const statsContainer = document.getElementById('stats-container');
   if (statsContainer) {
     statsContainer.innerHTML = '';
   }
   
-  // Destroy all chart instances
   for (const [key, chart] of Object.entries(chartInstances)) {
     if (chart) {
       chart.destroy();
@@ -482,44 +358,7 @@ export function clearResults() {
 }
 
 // ============================================================================
-// EXPORTED PLOT FUNCTIONS (For Direct Access)
-// ============================================================================
-
-/**
- * Plot pressure curve (direct access)
- * @param {Array} data - Simulation data array
- */
-export function plotPressure(data) {
-  if (!data || data.length === 0) return;
-  const labels = data.map(d => d.t_ms.toFixed(2));
-  const values = data.map(d => d.p_psi);
-  renderPressureChart(labels, values);
-}
-
-/**
- * Plot velocity curve (direct access)
- * @param {Array} data - Simulation data array
- */
-export function plotVelocity(data) {
-  if (!data || data.length === 0) return;
-  const labels = data.map(d => d.t_ms.toFixed(2));
-  const values = data.map(d => d.v_fps);
-  renderVelocityChart(labels, values);
-}
-
-/**
- * Plot burn fraction curve (direct access)
- * @param {Array} data - Simulation data array
- */
-export function plotBurnFraction(data) {
-  if (!data || data.length === 0) return;
-  const labels = data.map(d => d.t_ms.toFixed(2));
-  const values = data.map(d => d.z_pct);
-  renderBurnChart(labels, values);
-}
-
-// ============================================================================
-// EXPORTS
+// EXPORTS (Single Export Statement - No Duplicates)
 // ============================================================================
 
 export {
@@ -527,9 +366,6 @@ export {
   renderStats,
   clearResults,
   renderCharts,
-  plotPressure,
-  plotVelocity,
-  plotBurnFraction,
   chartInstances
 };
 
@@ -538,9 +374,7 @@ if (typeof window !== 'undefined') {
   window.ballisticsRenderer = {
     clear: clearResults,
     charts: chartInstances,
-    renderPressure: plotPressure,
-    renderVelocity: plotVelocity,
-    renderBurn: plotBurnFraction
+    render
   };
   console.log('🔧 Renderer helpers: window.ballisticsRenderer');
 }
