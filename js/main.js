@@ -32,14 +32,14 @@ import {
   loadPropellantData
 } from './inputHandler.js';
 
+// js/main.js - Update imports to match fixed exports
 import { 
   render, 
   renderStats, 
-  clearResults,
-  plotPressure,
-  plotVelocity,
-  plotBurnFraction
+  clearResults
+  // Removed: plotPressure, plotVelocity, plotBurnFraction (not needed)
 } from './outputRenderer.js';
+
 
 // ============================================================================
 // DOM ELEMENT REFERENCES
