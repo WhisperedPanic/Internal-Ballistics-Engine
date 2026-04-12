@@ -2,10 +2,10 @@
 // Internal Ballistics Engine - Input Handling & Validation Module
 
 // ============================================================================
-// DEFAULT PARAMETERS (SI Base)
+// CONSTANTS (Not exported inline - exported at end only)
 // ============================================================================
 
-export const DEFAULT_PARAMS = {
+const DEFAULT_PARAMS = {
   chargeMass_g: 2.50,
   projectileMass_g: 10.0,
   barrelLength_mm: 500,
@@ -13,11 +13,7 @@ export const DEFAULT_PARAMS = {
   chamberVolume_cm3: 3.50
 };
 
-// ============================================================================
-// UNIT CONVERSIONS
-// ============================================================================
-
-export const UNIT_CONVERSIONS = {
+const UNIT_CONVERSIONS = {
   g_to_kg: 0.001,
   kg_to_g: 1000,
   mm_to_m: 0.001,
@@ -33,12 +29,16 @@ export const UNIT_CONVERSIONS = {
 };
 
 // ============================================================================
-// PROPULSION DATABASE
+// INTERNAL STATE
 // ============================================================================
 
 let propellantCache = null;
 
-export async function loadPropellantData() {
+// ============================================================================
+// FUNCTIONS (Not exported inline - exported at end only)
+// ============================================================================
+
+async function loadPropellantData() {
   if (propellantCache) return propellantCache;
   try {
     const response = await fetch('./data/propellants.json');
@@ -52,24 +52,20 @@ export async function loadPropellantData() {
   }
 }
 
-export function getPropellantById(id) {
+function getPropellantById(id) {
   return propellantCache?.find(p => p.id === id) || null;
 }
 
-// ============================================================================
-// PUBLIC API FUNCTIONS
-// ============================================================================
-
-export function getDefaultParams() {
+function getDefaultParams() {
   return { ...DEFAULT_PARAMS };
 }
 
-export function convertUnit(value, from, to) {
+function convertUnit(value, from, to) {
   const key = `${from}_to_${to}`;
   return UNIT_CONVERSIONS[key] ? value * UNIT_CONVERSIONS[key] : value;
 }
 
-export function parseAndValidate(inputs, propellants = null) {
+function parseAndValidate(inputs, propellants = null) {
   const errors = [];
   
   const chargeMass_kg = parseFloat(inputs.chargeMass) * UNIT_CONVERSIONS.g_to_kg;
@@ -115,7 +111,7 @@ export function parseAndValidate(inputs, propellants = null) {
   };
 }
 
-export function loadFormConfig(cfg) {
+function loadFormConfig(cfg) {
   if (!cfg) return;
   const map = {
     chargeMass: 'chargeMass_g',
@@ -130,7 +126,7 @@ export function loadFormConfig(cfg) {
   }
 }
 
-export function saveFormConfig() {
+function saveFormConfig() {
   const cfg = {
     chargeMass_g: document.getElementById('charge-mass')?.value,
     projectileMass_g: document.getElementById('projectile-mass')?.value,
@@ -147,7 +143,7 @@ export function saveFormConfig() {
   return cfg;
 }
 
-export function loadSavedConfig() {
+function loadSavedConfig() {
   try {
     const raw = localStorage.getItem('ballistics-config');
     return raw ? JSON.parse(raw) : null;
@@ -157,28 +153,32 @@ export function loadSavedConfig() {
 }
 
 // ============================================================================
-// SINGLE EXPORT STATEMENT (NO DUPLICATES)
+// SINGLE EXPORT STATEMENT (ONLY ONE IN ENTIRE FILE)
 // ============================================================================
 
 export {
   DEFAULT_PARAMS,
   UNIT_CONVERSIONS,
-  getDefaultParams,
   loadPropellantData,
   getPropellantById,
-  parseAndValidate,
+  getDefaultParams,
   convertUnit,
+  parseAndValidate,
   loadFormConfig,
   saveFormConfig,
   loadSavedConfig
 };
 
-// Console helper
+// ============================================================================
+// CONSOLE HELPER (Not exported - window global only)
+// ============================================================================
+
 if (typeof window !== 'undefined') {
   window.ballisticsInput = {
     defaults: DEFAULT_PARAMS,
     conversions: UNIT_CONVERSIONS,
     loadPropellants: loadPropellantData,
+    getPropellant: getPropellantById,
     validate: parseAndValidate,
     save: saveFormConfig,
     load: loadSavedConfig
