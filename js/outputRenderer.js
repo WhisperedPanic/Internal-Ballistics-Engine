@@ -1,11 +1,8 @@
 // js/outputRenderer.js
 // Internal Ballistics Engine - Output Rendering Module
-// 
-// Purpose: Render simulation results to DOM and Chart.js canvases
-// Handles: stats display, time-series plots, imperial conversions
 
 // ============================================================================
-// CHART INSTANCES (Persist to enable updates/destroy)
+// CHART INSTANCES
 // ============================================================================
 
 const chartInstances = {
@@ -16,13 +13,9 @@ const chartInstances = {
 };
 
 // ============================================================================
-// MAIN RENDER FUNCTIONS
+// MAIN RENDER FUNCTIONS (Exported)
 // ============================================================================
 
-/**
- * Render full simulation results (charts + stats)
- * @param {object} results - Simulation results from runSimulation()
- */
 export function render(results) {
   if (!results || !results.data || !results.stats) {
     console.error('❌ Invalid results object passed to render()');
@@ -35,14 +28,10 @@ export function render(results) {
     resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   
-  renderCharts(results.data);
+  _renderCharts(results.data);
   console.log('✓ Results rendered successfully');
 }
 
-/**
- * Render statistics summary to DOM
- * @param {object} stats - Statistics from simulation results
- */
 export function renderStats(stats) {
   if (!stats) {
     console.error('❌ Invalid stats object passed to renderStats()');
@@ -118,11 +107,32 @@ export function renderStats(stats) {
   console.log('✓ Stats rendered successfully');
 }
 
-/**
- * Render all charts from simulation data
- * @param {Array} data - Array of data points from simulation
- */
-export function renderCharts(data) {
+export function clearResults() {
+  const resultsContainer = document.getElementById('results-container');
+  if (resultsContainer) {
+    resultsContainer.style.display = 'none';
+  }
+  
+  const statsContainer = document.getElementById('stats-container');
+  if (statsContainer) {
+    statsContainer.innerHTML = '';
+  }
+  
+  for (const [key, chart] of Object.entries(chartInstances)) {
+    if (chart) {
+      chart.destroy();
+      chartInstances[key] = null;
+    }
+  }
+  
+  console.log('✓ Results cleared');
+}
+
+// ============================================================================
+// INTERNAL HELPER FUNCTIONS (Not Exported)
+// ============================================================================
+
+function _renderCharts(data) {
   if (!data || data.length === 0) {
     console.error('❌ No data to render charts');
     return;
@@ -134,18 +144,14 @@ export function renderCharts(data) {
   const burnData = data.map(d => d.z_pct);
   const positionData = data.map(d => d.x_mm);
   
-  renderPressureChart(labels, pressureData);
-  renderVelocityChart(labels, velocityData);
-  renderBurnChart(labels, burnData);
-  renderPressurePositionChart(positionData, pressureData);
+  _renderPressureChart(labels, pressureData);
+  _renderVelocityChart(labels, velocityData);
+  _renderBurnChart(labels, burnData);
+  _renderPressurePositionChart(positionData, pressureData);
 }
 
-// ============================================================================
-// INDIVIDUAL CHART RENDERERS (Private)
-// ============================================================================
-
-function renderPressureChart(labels, data) {
-  const ctx = getCanvasContext('chart-pressure');
+function _renderPressureChart(labels, data) {
+  const ctx = _getCanvasContext('chart-pressure');
   if (!ctx) return;
   
   if (chartInstances.pressure) {
@@ -174,11 +180,7 @@ function renderPressureChart(labels, data) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: true, position: 'top' },
-        tooltip: {
-          callbacks: {
-            label: (context) => `Pressure: ${context.parsed.y.toFixed(0)} PSI`
-          }
-        }
+        tooltip: { callbacks: { label: (c) => `Pressure: ${c.parsed.y.toFixed(0)} PSI` } }
       },
       scales: {
         x: { title: { display: true, text: 'Time (ms)' }, ticks: { maxTicksLimit: 10 } },
@@ -188,8 +190,8 @@ function renderPressureChart(labels, data) {
   });
 }
 
-function renderVelocityChart(labels, data) {
-  const ctx = getCanvasContext('chart-velocity');
+function _renderVelocityChart(labels, data) {
+  const ctx = _getCanvasContext('chart-velocity');
   if (!ctx) return;
   
   if (chartInstances.velocity) {
@@ -218,11 +220,7 @@ function renderVelocityChart(labels, data) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: true, position: 'top' },
-        tooltip: {
-          callbacks: {
-            label: (context) => `Velocity: ${context.parsed.y.toFixed(0)} FPS`
-          }
-        }
+        tooltip: { callbacks: { label: (c) => `Velocity: ${c.parsed.y.toFixed(0)} FPS` } }
       },
       scales: {
         x: { title: { display: true, text: 'Time (ms)' }, ticks: { maxTicksLimit: 10 } },
@@ -232,8 +230,8 @@ function renderVelocityChart(labels, data) {
   });
 }
 
-function renderBurnChart(labels, data) {
-  const ctx = getCanvasContext('chart-burn');
+function _renderBurnChart(labels, data) {
+  const ctx = _getCanvasContext('chart-burn');
   if (!ctx) return;
   
   if (chartInstances.burn) {
@@ -262,11 +260,7 @@ function renderBurnChart(labels, data) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: true, position: 'top' },
-        tooltip: {
-          callbacks: {
-            label: (context) => `Burned: ${context.parsed.y.toFixed(1)}%`
-          }
-        }
+        tooltip: { callbacks: { label: (c) => `Burned: ${c.parsed.y.toFixed(1)}%` } }
       },
       scales: {
         x: { title: { display: true, text: 'Time (ms)' }, ticks: { maxTicksLimit: 10 } },
@@ -276,8 +270,8 @@ function renderBurnChart(labels, data) {
   });
 }
 
-function renderPressurePositionChart(positionData, pressureData) {
-  const ctx = getCanvasContext('chart-pressure-position');
+function _renderPressurePositionChart(positionData, pressureData) {
+  const ctx = _getCanvasContext('chart-pressure-position');
   if (!ctx) return;
   
   if (chartInstances.pressurePosition) {
@@ -306,11 +300,7 @@ function renderPressurePositionChart(positionData, pressureData) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: true, position: 'top' },
-        tooltip: {
-          callbacks: {
-            label: (context) => `Pressure: ${context.parsed.y.toFixed(0)} PSI @ ${context.label} mm`
-          }
-        }
+        tooltip: { callbacks: { label: (c) => `Pressure: ${c.parsed.y.toFixed(0)} PSI @ ${c.label} mm` } }
       },
       scales: {
         x: { title: { display: true, text: 'Projectile Position (mm)' }, ticks: { maxTicksLimit: 10 } },
@@ -320,11 +310,7 @@ function renderPressurePositionChart(positionData, pressureData) {
   });
 }
 
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-function getCanvasContext(canvasId) {
+function _getCanvasContext(canvasId) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) {
     console.warn(`⚠️ Canvas element not found: ${canvasId}`);
@@ -333,41 +319,11 @@ function getCanvasContext(canvasId) {
   return canvas.getContext('2d');
 }
 
-/**
- * Clear all results from DOM (charts + stats)
- */
-export function clearResults() {
-  const resultsContainer = document.getElementById('results-container');
-  if (resultsContainer) {
-    resultsContainer.style.display = 'none';
-  }
-  
-  const statsContainer = document.getElementById('stats-container');
-  if (statsContainer) {
-    statsContainer.innerHTML = '';
-  }
-  
-  for (const [key, chart] of Object.entries(chartInstances)) {
-    if (chart) {
-      chart.destroy();
-      chartInstances[key] = null;
-    }
-  }
-  
-  console.log('✓ Results cleared');
-}
-
 // ============================================================================
-// EXPORTS (Single Export Statement - No Duplicates)
+// SINGLE EXPORT STATEMENT (All exports in one place)
 // ============================================================================
 
-export {
-  render,
-  renderStats,
-  clearResults,
-  renderCharts,
-  chartInstances
-};
+export { chartInstances };
 
 // Console helper for debugging
 if (typeof window !== 'undefined') {
