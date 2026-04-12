@@ -36,14 +36,12 @@ function calculateDerivatives_SI(y, params) {
   // SURFACE AREA MULTIPLIER
   const surfaceMultiplier = 10;
   
-  // BURN RATE SCALING - Database B values are 1e6 too small
-  // Typical propellant: B ~ 1e-4 m/s/MPa^n, database has ~1e-10
-  const B_SCALE_FACTOR = 1e6;
+  // BURN RATE SCALING - Database B values are ~1e7 too small
+  // Typical propellant: B ~ 1e-3 m/s/MPa^n, database has ~1e-10
+  const B_SCALE_FACTOR = 1e7;
   
-  const r_burn_mps = Math.max(
-    propellant.B_mps_Pa_n * B_SCALE_FACTOR * Math.pow(P_MPa, n_eff),
-    0.01
-  );
+  // NO CLAMP - let burn rate be calculated naturally
+  const r_burn_mps = propellant.B_mps_Pa_n * B_SCALE_FACTOR * Math.pow(P_MPa, n_eff);
   
   const S_m2 = (propellant.S0_m2 * surfaceMultiplier) * Math.max(0.01, (1 - propellant.alpha_geom * Z_clamped));
   
