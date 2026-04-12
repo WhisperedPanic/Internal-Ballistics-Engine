@@ -26,19 +26,22 @@ function calculateDerivatives_SI(y, params) {
   const P_ignition_Pa = 5e6;
   const P_effective_Pa = P_base_Pa + (Z_clamped < 0.01 ? P_ignition_Pa : 0);
   
-  // BURN RATE (Vielle's Law) - CONVERT TO MPa FOR B COEFFICIENT
+  // BURN RATE (Vielle's Law) - CONVERT TO MPa
   const P_MPa = P_effective_Pa / 1e6;
   let n_eff = propellant.n;
   if (P_MPa > 300) {
     n_eff = Math.max(0.1, n_eff - 0.02 * (P_MPa - 300) / 100);
   }
   
-  // Surface area multiplier (10x for realistic grain geometry)
+  // SURFACE AREA MULTIPLIER
   const surfaceMultiplier = 10;
   
-  // B coefficient is in m/s/MPa^n, so use P in MPa
+  // BURN RATE SCALING - Database B values are 1e6 too small
+  // Typical propellant: B ~ 1e-4 m/s/MPa^n, database has ~1e-10
+  const B_SCALE_FACTOR = 1e6;
+  
   const r_burn_mps = Math.max(
-    propellant.B_mps_Pa_n * Math.pow(P_MPa, n_eff),
+    propellant.B_mps_Pa_n * B_SCALE_FACTOR * Math.pow(P_MPa, n_eff),
     0.01
   );
   
