@@ -16,7 +16,7 @@ env:
   CARGO_TERM_COLOR: always
   WASM_OUT_DIR: js/solvers/wasm
   LIBLSODA_REPO: https://github.com/sdwfrost/liblsoda
-  LIBLSODA_REF: v1.0.3  # Pin to tag/commit for reproducibility
+  LIBLSODA_REF: master  # Pin to tag/commit for reproducibility
 
 jobs:
   build-wasm:
