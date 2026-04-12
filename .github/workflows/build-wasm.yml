@@ -1,0 +1,101 @@
+# .github/workflows/build-wasm.yml
+name: Build LSODA WASM Solver
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'js/solvers/lsodaSolver.js'
+      - 'js/solvers/wasm/**'
+      - '.github/workflows/build-wasm.yml'
+  workflow_dispatch:  # Manual trigger from GitHub UI
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly rebuild (catch dependency updates)
+
+env:
+  CARGO_TERM_COLOR: always
+  WASM_OUT_DIR: js/solvers/wasm
+  LIBLSODA_REPO: https://github.com/sdwfrost/liblsoda
+  LIBLSODA_REF: main  # Pin to tag/commit for reproducibility
+
+jobs:
+  build-wasm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write  # Allow auto-commit of generated files
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Cache Rust toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target/
+          key: ${{ runner.os }}-cargo-wasm-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-wasm-
+
+      - name: Install Rust + wasm-pack
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          cargo install wasm-pack --locked
+
+      - name: Clone liblsoda
+        run: |
+          git clone --depth 1 --branch ${{ env.LIBLSODA_REF }} ${{ env.LIBLSODA_REPO }} liblsoda-src
+          cd liblsoda-src && git rev-parse HEAD > ../COMMIT_SHA.txt
+
+      - name: Build WASM module
+        run: |
+          cd liblsoda-src
+          wasm-pack build --target web --out-dir ../${{ env.WASM_OUT_DIR }} --release
+          # Verify output
+          test -f ../${{ env.WASM_OUT_DIR }}/lsoda_wasm.js || exit 1
+          test -f ../${{ env.WASM_OUT_DIR }}/lsoda_wasm_bg.wasm || exit 1
+          echo "✓ WASM build successful"
+
+      - name: Add build metadata
+        run: |
+          echo "Built: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" > ${{ env.WASM_OUT_DIR }}/BUILD_INFO.txt
+          echo "Commit: $(cat COMMIT_SHA.txt)" >> ${{ env.WASM_OUT_DIR }}/BUILD_INFO.txt
+          echo "wasm-pack: $(wasm-pack --version)" >> ${{ env.WASM_OUT_DIR }}/BUILD_INFO.txt
+
+      - name: Commit generated files
+        if: github.event_name != 'pull_request'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Only commit if files changed
+          if ! git diff --quiet ${{ env.WASM_OUT_DIR }}; then
+            git add ${{ env.WASM_OUT_DIR }}/lsoda_wasm.js \
+                    ${{ env.WASM_OUT_DIR }}/lsoda_wasm_bg.wasm \
+                    ${{ env.WASM_OUT_DIR }}/BUILD_INFO.txt
+            git commit -m "chore: auto-build LSODA WASM [skip ci]
+            
+            Source: ${{ env.LIBLSODA_REPO }}@$(cat COMMIT_SHA.txt | cut -c1-7)
+            Built: $(date -u +"%Y-%m-%d %H:%M UTC")
+            "
+            git push
+            echo "✓ Committed WASM artifacts"
+          else
+            echo "✓ No changes to WASM artifacts"
+          fi
+
+      - name: Upload build artifacts (for debugging)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-build-${{ github.run_number }}
+          path: ${{ env.WASM_OUT_DIR }}/
+          retention-days: 7
+
