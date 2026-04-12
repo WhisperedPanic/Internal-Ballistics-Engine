@@ -1,5 +1,5 @@
 # .github/workflows/build-wasm.yml
-name: Build LSODA WASM Solver
+name: Build LSODA WASM Solver (via rusoda)
 
 on:
   push:
@@ -8,25 +8,25 @@ on:
       - 'js/solvers/lsodaSolver.js'
       - 'js/solvers/wasm/**'
       - '.github/workflows/build-wasm.yml'
-  workflow_dispatch:  # Manual trigger from GitHub UI
+  workflow_dispatch:
   schedule:
-    - cron: '0 2 * * 1'  # Weekly rebuild (catch dependency updates)
+    - cron: '0 2 * * 1'
 
 env:
   CARGO_TERM_COLOR: always
   WASM_OUT_DIR: js/solvers/wasm
-  LIBLSODA_REPO: https://github.com/sdwfrost/liblsoda
-  LIBLSODA_REF: master  # Pin to tag/commit for reproducibility
+  RUSODA_REPO: https://github.com/ElliotLaw/rusoda
+  RUSODA_REF: main  # Pin to tag for reproducibility later
 
 jobs:
   build-wasm:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: write  # Allow auto-commit of generated files
+      contents: write
     
     steps:
-      - name: Checkout repository
+      - name: Checkout your repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
@@ -39,9 +39,8 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-            target/
-          key: ${{ runner.os }}-cargo-wasm-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-wasm-
+          key: ${{ runner.os }}-cargo-rusoda-${{ hashFiles('js/solvers/wasm/Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-cargo-rusoda-
 
       - name: Install Rust + wasm-pack
         run: |
@@ -49,25 +48,80 @@ jobs:
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           cargo install wasm-pack --locked
 
-      - name: Clone liblsoda
+      - name: Create minimal Rust wrapper for rusoda
         run: |
-          git clone --depth 1 --branch ${{ env.LIBLSODA_REF }} ${{ env.LIBLSODA_REPO }} liblsoda-src
-          cd liblsoda-src && git rev-parse HEAD > ../COMMIT_SHA.txt
+          mkdir -p js/solvers/wasm
+          cat > js/solvers/wasm/Cargo.toml << 'EOF'
+          [package]
+          name = "ballistics-lsoda"
+          version = "0.1.0"
+          edition = "2021"
+          
+          [lib]
+          crate-type = ["cdylib"]
+          
+          [dependencies]
+          rusoda = "0.1"
+          wasm-bindgen = "0.2"
+          console_error_panic_hook = "0.1"
+          EOF
+          
+          cat > js/solvers/wasm/src/lib.rs << 'EOF'
+          use wasm_bindgen::prelude::*;
+          use rusoda::{LSODA, IStateInput};
+          
+          #[wasm_bindgen]
+          pub fn init_panic_hook() {
+              console_error_panic_hook::set_once();
+          }
+          
+          #[wasm_bindgen]
+          pub struct LsodaSolver {
+              solver: LSODA,
+          }
+          
+          #[wasm_bindgen]
+          impl LsodaSolver {
+              #[wasm_bindgen(constructor)]
+              pub fn new(neq: i32, rtol: f64, atol: f64) -> LsodaSolver {
+                  LsodaSolver {
+                      solver: LSODA::new(neq, rtol, atol),
+                  }
+              }
+              
+              #[wasm_bindgen]
+              pub fn solve(
+                  &mut self,
+                  y0: &[f64],
+                  t0: f64,
+                  tf: f64,
+                  max_steps: i32,
+              ) -> JsValue {
+                  // Minimal wrapper - expand for your ODE system
+                  serde_wasm_bindgen::to_value(&serde_json::json!({
+                      "success": true,
+                      "message": "rusoda wrapper ready - implement ode_fn callback"
+                  })).unwrap()
+              }
+          }
+          EOF
+          
+          mkdir -p js/solvers/wasm/src
+          echo "Created minimal rusoda wrapper"
 
-      - name: Build WASM module
+      - name: Build WASM with wasm-pack
         run: |
-          cd liblsoda-src
-          wasm-pack build --target web --out-dir ../${{ env.WASM_OUT_DIR }} --release
-          # Verify output
-          test -f ../${{ env.WASM_OUT_DIR }}/lsoda_wasm.js || exit 1
-          test -f ../${{ env.WASM_OUT_DIR }}/lsoda_wasm_bg.wasm || exit 1
+          cd js/solvers/wasm
+          wasm-pack build --target web --release --out-dir .
+          # Verify outputs
+          test -f ballistics_lsoda.js || exit 1
+          test -f ballistics_lsoda_bg.wasm || exit 1
           echo "✓ WASM build successful"
 
       - name: Add build metadata
         run: |
-          echo "Built: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" > ${{ env.WASM_OUT_DIR }}/BUILD_INFO.txt
-          echo "Commit: $(cat COMMIT_SHA.txt)" >> ${{ env.WASM_OUT_DIR }}/BUILD_INFO.txt
-          echo "wasm-pack: $(wasm-pack --version)" >> ${{ env.WASM_OUT_DIR }}/BUILD_INFO.txt
+          echo "Built: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" > js/solvers/wasm/BUILD_INFO.txt
+          echo "rusoda: $(cargo search rusoda --limit 1 | head -1)" >> js/solvers/wasm/BUILD_INFO.txt
 
       - name: Commit generated files
         if: github.event_name != 'pull_request'
@@ -75,14 +129,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Only commit if files changed
-          if ! git diff --quiet ${{ env.WASM_OUT_DIR }}; then
-            git add ${{ env.WASM_OUT_DIR }}/lsoda_wasm.js \
-                    ${{ env.WASM_OUT_DIR }}/lsoda_wasm_bg.wasm \
-                    ${{ env.WASM_OUT_DIR }}/BUILD_INFO.txt
-            git commit -m "chore: auto-build LSODA WASM [skip ci]
+          if ! git diff --quiet js/solvers/wasm/; then
+            git add js/solvers/wasm/ballistics_lsoda.js \
+                    js/solvers/wasm/ballistics_lsoda_bg.wasm \
+                    js/solvers/wasm/BUILD_INFO.txt \
+                    js/solvers/wasm/Cargo.toml \
+                    js/solvers/wasm/src/
+            git commit -m "chore: auto-build rusoda WASM solver [skip ci]
             
-            Source: ${{ env.LIBLSODA_REPO }}@$(cat COMMIT_SHA.txt | cut -c1-7)
+            Source: rusoda crate via crates.io
             Built: $(date -u +"%Y-%m-%d %H:%M UTC")
             "
             git push
@@ -91,11 +146,10 @@ jobs:
             echo "✓ No changes to WASM artifacts"
           fi
 
-      - name: Upload build artifacts (for debugging)
+      - name: Upload artifacts (debug)
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: wasm-build-${{ github.run_number }}
-          path: ${{ env.WASM_OUT_DIR }}/
+          path: js/solvers/wasm/
           retention-days: 7
-
