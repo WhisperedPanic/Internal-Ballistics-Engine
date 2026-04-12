@@ -22,11 +22,11 @@ function calculateDerivatives_SI(y, params) {
   const lagrangeFactor = 1 + propellant.mass_kg / (3 * projectile.mass_kg);
   const P_base_Pa = P_mean_Pa / lagrangeFactor;
   
-  // IGNITION MODEL - Primer flash provides initial pressure
+  // IGNITION MODEL
   const P_ignition_Pa = 5e6;
   const P_effective_Pa = P_base_Pa + (Z_clamped < 0.01 ? P_ignition_Pa : 0);
   
-  // BURN RATE (Vielle's Law)
+  // BURN RATE (Vielle's Law) - CONVERT TO MPa FOR B COEFFICIENT
   const P_MPa = P_effective_Pa / 1e6;
   let n_eff = propellant.n;
   if (P_MPa > 300) {
@@ -35,8 +35,10 @@ function calculateDerivatives_SI(y, params) {
   
   // Surface area multiplier (10x for realistic grain geometry)
   const surfaceMultiplier = 10;
+  
+  // B coefficient is in m/s/MPa^n, so use P in MPa
   const r_burn_mps = Math.max(
-    propellant.B_mps_Pa_n * Math.pow(P_effective_Pa, n_eff),
+    propellant.B_mps_Pa_n * Math.pow(P_MPa, n_eff),
     0.01
   );
   
@@ -79,7 +81,6 @@ function implicitEulerStep(y, params, dt, maxIter = 25, tol = 1e-9) {
     
     if (err < tol) break;
     
-    // Adaptive damping
     const damping = iter < 5 ? 0.3 : (iter < 10 ? 0.5 : 0.7);
     yNew = yNew.map((val, i) => val - damping * residual[i]);
   }
@@ -204,7 +205,6 @@ async function runSimulation(params) {
     do {
       dt = Math.max(dtMin, Math.min(dtMax, dt));
       
-      // Tighter tolerance during ignition phase
       const currentTol = Z_clamped < 0.05 ? 1e-7 : 1e-6;
       
       stepResult = adaptiveStep(y, params, dt, currentTol);
@@ -304,7 +304,7 @@ const UNITS = {
 };
 
 // ============================================================================
-// SINGLE EXPORT BLOCK (ONLY ONE IN FILE)
+// SINGLE EXPORT BLOCK
 // ============================================================================
 
 export {
