@@ -1,26 +1,26 @@
-// js/solvers/interface.js - Single export, solver-agnostic
+// js/solvers/interface.js
 export const SOLVERS = {
-  LSODA: 'lsoda',
-  RK4: 'rk4'
+  STIFF_JS: 'stiff-js',  // NEW: pure-JS stiff solver
+  RK4: 'rk4'            // EXISTING: fallback
 };
 
-let activeSolver = SOLVERS.LSODA; // Configurable via URL param or UI
+let activeSolver = SOLVERS.STIFF_JS; // Default to new stiff solver
 
 export function setActiveSolver(name) {
-  if (!Object.values(SOLVERS).includes(name)) throw new Error('Unknown solver');
+  if (!Object.values(SOLVERS).includes(name)) {
+    throw new Error(`Unknown solver: ${name}`);
+  }
   activeSolver = name;
 }
 
 export async function runSimulation(params) {
-  // Lazy-load solver modules to keep initial bundle small
-  if (activeSolver === SOLVERS.LSODA) {
-    const { runSimulation: lsodaRun } = await import('./lsodaSolver.js');
-    return await lsodaRun(params);
+  if (activeSolver === SOLVERS.STIFF_JS) {
+    const mod = await import('./stiffSolver.js');
+    return await mod.runSimulation(params);
   } else {
-    const { runSimulation: rk4Run } = await import('../physicsSolver.js');
-    return await rk4Run(params);
+    const mod = await import('../physicsSolver.js');
+    return await mod.runSimulation(params);
   }
 }
 
-// Optional: expose for debugging/UI toggle
 export { activeSolver };
