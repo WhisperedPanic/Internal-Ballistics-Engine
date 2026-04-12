@@ -1,0 +1,8 @@
+# Auto-generated WASM (committed by CI only)
+js/solvers/wasm/lsoda_wasm.js
+js/solvers/wasm/lsoda_wasm_bg.wasm
+js/solvers/wasm/BUILD_INFO.txt
+
+# Keep mock for local testing
+!js/solvers/wasm/lsoda_mock.js
+
