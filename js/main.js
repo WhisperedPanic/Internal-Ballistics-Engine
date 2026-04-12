@@ -2,9 +2,9 @@
  * Main Orchestration Module
  * Connects Input, Physics, and Output modules.
  */
-
+   
 import { init as initInput, getSimulationParams } from './inputHandler.js';
-import { runSimulation } from './physicsSolver.js';
+import { runSimulation, setActiveSolver, SOLVERS } from './solvers/interface.js';
 import { initCharts, updateUI, resetUI } from './outputRenderer.js';
 
 // Initialize Application
