@@ -1,141 +1,424 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Internal Ballistics Simulator (DLPM)</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/400.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/700.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #2563eb; --primary-dark: #1d4ed8; --bg: #f8fafc; --surface: #ffffff;
-            --text: #1e293b; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b;
-        }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        .container { max-width: 1400px; margin: 0 auto; }
-        header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        .grid { display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
-        @media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        h2 { font-size: 1.1rem; margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: var(--text); }
-        input, select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; }
-        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-        button { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .btn-run { background: var(--primary); color: white; }
-        .btn-run:hover { background: var(--primary-dark); }
-        .btn-reset { background: var(--bg); border: 1px solid var(--border); }
-        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-        .stat-box { background: var(--bg); padding: 10px; border-radius: 8px; text-align: center; }
-        .stat-val { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
-        .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; }
-        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-        .chart-container { position: relative; height: 300px; }
-        .propellant-details { font-size: 0.8rem; background: #eff6ff; padding: 10px; border-radius: 6px; margin-top: 10px; border-left: 4px solid var(--primary); }
-        .model-badge { display: inline-block; background: var(--success); color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 8px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Internal Ballistics Engine - Pure-JS stiff solver with validation">
+  <meta name="author" content="WhisperedPanic">
+  
+  <title>Internal Ballistics Engine</title>
+  
+  <!-- Chart.js for plotting (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+  
+  <!-- Main Application Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <!-- Favicon (optional) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
 </head>
 <body>
-
-<div class="container">
-    <header>
-        <h1>Dynamic Internal Ballistics Simulator</h1>
-        <p>Corner Model with Pressure-Dependent Burn Rate (DLPM) | Adaptive RK4 Integration</p>
+  <div class="container">
+    
+    <!-- ====================================================================
+         HEADER
+         ==================================================================== -->
+    <header class="header">
+      <h1>🎯 Internal Ballistics Engine</h1>
+      <p class="subtitle">Pure-JS stiff solver with adaptive integration &amp; terminal event detection</p>
+      <div class="solver-info">
+        <span class="badge badge-info">SI Internal</span>
+        <span class="badge badge-success">GitHub Pages Ready</span>
+        <span class="badge badge-warning">No Backend Required</span>
+      </div>
     </header>
-
-    <div class="grid">
-        <!-- Input Panel -->
-        <div class="card">
-            <h2>Parameters</h2>
-            
-            <div class="form-group">
-				<label for="presetSelect">Cartridge Preset</label>
-    			<select id="presetSelect">
-        			<option value="custom" selected>Custom Load</option>
-    				<option value="308win">.308 Winchester</option>
-    				<option value="7.62mm NATO">7.62mm NATO</option>
-        			<option value="223rem">.223 Remington</option>
-        			<option value="5.56mm NATO">5.56mm NATO</option>
-        			<option value="300winmag">.300 Win Mag</option>
-        			<option value="50bmg">.50 BMG</option>
-    			</select>
-			</div>
-
-            <div class="form-group">
-    			<label for="propellantSelect">Propellant</label>
-    			<select id="propellantSelect"></select>
-    			<div id="propDetails" class="propellant-details"></div>
-			</div>
-
-			<div class="form-group">
-    			<label for="chargeMass">Charge Mass (grains)</label>
-    			<input type="number" id="chargeMass" step="0.1">
-			</div>
-
-			<div class="form-group">
-    			<label for="projMass">Projectile Mass (grains)</label>
-    			<input type="number" id="projMass" step="0.1">
-			</div>
-
-			<div class="form-group">
-    			<label for="barrelLength">Barrel Length (inches)</label>
-    			<input type="number" id="barrelLength" step="0.1">
-			</div>
-
-			<div class="form-group">
-    			<label for="chamberVol">Chamber Volume (cm³)</label>
-    			<input type="number" id="chamberVol" step="0.1">
-			</div>
-			
-            <div class="btn-group">
-                <button class="btn-run" onclick="runSimulation()">▶ Run Simulation</button>
-                <button class="btn-reset" onclick="resetSim()">↺ Reset</button>
+    
+    <!-- ====================================================================
+         SIMULATION FORM
+         ==================================================================== -->
+    <main class="main-content">
+      <section class="form-section">
+        <h2>Simulation Parameters</h2>
+        
+        <form id="simulation-form" class="simulation-form">
+          
+          <!-- Propellant Selection -->
+          <div class="form-group">
+            <label for="propellant-select">Propellant Type:</label>
+            <select id="propellant-select" required>
+              <option value="">Select propellant...</option>
+              <!-- Populated by inputHandler.js -->
+            </select>
+            <small class="help-text">Select from loaded propellant database (data/propellants.json)</small>
+          </div>
+          
+          <!-- Charge Mass -->
+          <div class="form-group">
+            <label for="charge-mass">Charge Mass:</label>
+            <div class="input-with-unit">
+              <input 
+                type="number" 
+                id="charge-mass" 
+                step="0.01" 
+                min="0.01" 
+                max="100" 
+                value="2.50"
+                required
+              >
+              <span class="unit">g</span>
             </div>
-            
-            <div style="margin-top:15px; font-size:0.75rem; color:#64748b;">
-                <strong>Model Note:</strong> Uses dynamic $B(P)$ and $n(P)$ corrections with Adaptive RK4 integration for stability.
+            <small class="help-text">Propellant charge mass (grams)</small>
+          </div>
+          
+          <!-- Projectile Mass -->
+          <div class="form-group">
+            <label for="projectile-mass">Projectile Mass:</label>
+            <div class="input-with-unit">
+              <input 
+                type="number" 
+                id="projectile-mass" 
+                step="0.1" 
+                min="0.1" 
+                max="500" 
+                value="10.0"
+                required
+              >
+              <span class="unit">g</span>
             </div>
+            <small class="help-text">Projectile/bullet mass (grams)</small>
+          </div>
+          
+          <!-- Barrel Length -->
+          <div class="form-group">
+            <label for="barrel-length">Barrel Length:</label>
+            <div class="input-with-unit">
+              <input 
+                type="number" 
+                id="barrel-length" 
+                step="1" 
+                min="10" 
+                max="2000" 
+                value="500"
+                required
+              >
+              <span class="unit">mm</span>
+            </div>
+            <small class="help-text">Total barrel length (millimeters)</small>
+          </div>
+          
+          <!-- Bore Diameter -->
+          <div class="form-group">
+            <label for="bore-diameter">Bore Diameter:</label>
+            <div class="input-with-unit">
+              <input 
+                type="number" 
+                id="bore-diameter" 
+                step="0.01" 
+                min="1" 
+                max="50" 
+                value="7.62"
+                required
+              >
+              <span class="unit">mm</span>
+            </div>
+            <small class="help-text">Bore/caliber diameter (millimeters)</small>
+          </div>
+          
+          <!-- Chamber Volume -->
+          <div class="form-group">
+            <label for="chamber-volume">Chamber Volume:</label>
+            <div class="input-with-unit">
+              <input 
+                type="number" 
+                id="chamber-volume" 
+                step="0.1" 
+                min="0.1" 
+                max="100" 
+                value="3.50"
+                required
+              >
+              <span class="unit">cm³</span>
+            </div>
+            <small class="help-text">Initial chamber volume excluding propellant (cubic centimeters)</small>
+          </div>
+          
+          <!-- Solver Selection -->
+          <div class="form-group solver-select-group">
+            <label for="solver-select">Numerical Solver:</label>
+            <select id="solver-select">
+              <!-- Populated by solvers/interface.js -->
+            </select>
+            <small class="help-text">
+              <strong>Stiff-JS:</strong> Implicit Euler + adaptive RK4 (default, recommended)<br>
+              <strong>RK4:</strong> Explicit Runge-Kutta 4th order (fallback, cross-validation)
+            </small>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="button-group">
+            <button type="submit" id="simulate-btn" class="btn btn-primary">
+              ▶ Simulate
+            </button>
+            <button type="button" id="compare-solvers-btn" class="btn btn-secondary">
+              🔬 Compare Solvers
+            </button>
+            <button type="button" id="reset-btn" class="btn btn-outline">
+              ↺ Reset
+            </button>
+            <button type="button" id="export-btn" class="btn btn-outline">
+              📥 Export CSV
+            </button>
+          </div>
+          
+          <!-- Keyboard Shortcut Hint -->
+          <p class="keyboard-hint">
+            <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to simulate
+          </p>
+        </form>
+      </section>
+      
+      <!-- ====================================================================
+           STATUS & LOADING
+           ==================================================================== -->
+      <section class="status-section">
+        <div id="status-message" class="status-message status-default">
+          Ready. Select propellant and configure parameters.
         </div>
-
-        <!-- Results Panel -->
-        <div class="card">
-            <h2>Results <span class="model-badge">DLPM Active</span></h2>
-            
-            <div class="stats-grid">
-                <div class="stat-box">
-                    <div class="stat-val" id="resVel">--</div>
-                    <div class="stat-label">Muzzle Velocity (ft/s)</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-val" id="resPress">--</div>
-                    <div class="stat-label">Peak Pressure (PSI)</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-val" id="resTime">--</div>
-                    <div class="stat-label">Time to Muzzle (ms)</div>
-                </div>
-            </div>
-
-            <div class="chart-container">
-                <canvas id="mainChart"></canvas>
-            </div>
-            
-            <div class="chart-row">
-                <div class="chart-container">
-                    <canvas id="burnChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <canvas id="phaseChart"></canvas>
-                </div>
-            </div>
+        <div id="loading-indicator" class="loading-indicator" style="display: none;">
+          <div class="spinner"></div>
+          <span>Running simulation...</span>
         </div>
-    </div>
-</div>
-
-<!-- Modular Entry Point -->
-<script type="module" src="js/main.js"></script>
-
+      </section>
+      
+      <!-- ====================================================================
+           RESULTS
+           ==================================================================== -->
+      <section id="results-container" class="results-section" style="display: none;">
+        <h2>Simulation Results</h2>
+        
+        <!-- Statistics Summary -->
+        <div id="stats-container" class="stats-grid">
+          <!-- Populated by outputRenderer.js -->
+        </div>
+        
+        <!-- Charts -->
+        <div id="charts-container" class="charts-grid">
+          <!-- Pressure Curve -->
+          <div class="chart-card">
+            <h3>Chamber Pressure vs Time</h3>
+            <canvas id="chart-pressure"></canvas>
+          </div>
+          
+          <!-- Velocity Curve -->
+          <div class="chart-card">
+            <h3>Projectile Velocity vs Time</h3>
+            <canvas id="chart-velocity"></canvas>
+          </div>
+          
+          <!-- Burn Fraction -->
+          <div class="chart-card">
+            <h3>Propellant Burn Fraction vs Time</h3>
+            <canvas id="chart-burn"></canvas>
+          </div>
+          
+          <!-- Pressure vs Position -->
+          <div class="chart-card">
+            <h3>Pressure vs Projectile Position</h3>
+            <canvas id="chart-pressure-position"></canvas>
+          </div>
+        </div>
+      </section>
+      
+      <!-- ====================================================================
+           VALIDATION SECTION
+           ==================================================================== -->
+      <section class="validation-section">
+        <h2>Validation &amp; Testing</h2>
+        <div class="validation-controls">
+          <button type="button" id="run-validation-btn" class="btn btn-secondary">
+            🧪 Run Validation Tests
+          </button>
+          <button type="button" id="toggle-console-btn" class="btn btn-outline">
+            📋 Show Debug Console
+          </button>
+        </div>
+        <div id="validation-output" class="validation-output" style="display: none;">
+          <!-- Validation results populated here -->
+        </div>
+      </section>
+      
+    </main>
+    
+    <!-- ====================================================================
+         FOOTER
+         ==================================================================== -->
+    <footer class="footer">
+      <div class="footer-content">
+        <p>
+          <strong>Physics Model:</strong> Noble-Abel EOS + Vielle Burn Law + Lagrange Gradient
+        </p>
+        <p>
+          <strong>Units:</strong> Internal SI (m, kg, s, Pa) | Display Imperial (PSI, FPS, mm)
+        </p>
+        <p>
+          <strong>Source:</strong> 
+          <a href="https://github.com/WhisperedPanic/Internal-Ballistics-Engine" target="_blank" rel="noopener">
+            GitHub Repository
+          </a>
+          | 
+          <a href="SOURCE.md" target="_blank" rel="noopener">
+            Validation Documentation
+          </a>
+        </p>
+        <p class="disclaimer">
+          ⚠️ For educational/research purposes only. Not for actual firearm design or safety-critical applications.
+        </p>
+      </div>
+    </footer>
+    
+  </div>
+  
+  <!-- ====================================================================
+       APPLICATION SCRIPTS (ES Modules)
+       ==================================================================== -->
+  <script type="module" src="js/main.js"></script>
+  
+  <!-- ====================================================================
+       INLINE STYLES (Fallback if CSS file fails to load)
+       ==================================================================== -->
+  <style>
+    /* Critical CSS for initial render */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f5f5f5;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .form-section, .results-section, .validation-section { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 8px; 
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+    .form-group input, .form-group select { 
+      width: 100%; 
+      padding: 10px; 
+      border: 1px solid #ddd; 
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .input-with-unit { display: flex; gap: 10px; }
+    .input-with-unit input { flex: 1; }
+    .input-with-unit .unit { 
+      padding: 10px; 
+      background: #f0f0f0; 
+      border: 1px solid #ddd; 
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+    }
+    .button-group { 
+      display: flex; 
+      gap: 10px; 
+      flex-wrap: wrap; 
+      margin-top: 20px;
+    }
+    .btn { 
+      padding: 12px 24px; 
+      border: none; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-primary:hover { background: #0056b3; }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-outline { background: white; border: 1px solid #ddd; color: #333; }
+    .status-message { 
+      padding: 12px; 
+      border-radius: 4px; 
+      margin: 15px 0;
+      text-align: center;
+    }
+    .status-success { background: #d4edda; color: #155724; }
+    .status-error { background: #f8d7da; color: #721c24; }
+    .status-warning { background: #fff3cd; color: #856404; }
+    .status-info { background: #d1ecf1; color: #0c5460; }
+    .loading-indicator { 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 10px;
+      padding: 20px;
+    }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .stats-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .stat-card { 
+      background: #f8f9fa; 
+      padding: 15px; 
+      border-radius: 4px; 
+      text-align: center;
+    }
+    .stat-card .value { font-size: 24px; font-weight: bold; color: #007bff; }
+    .stat-card .label { font-size: 12px; color: #666; }
+    .charts-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); 
+      gap: 20px;
+    }
+    .chart-card { 
+      background: #f8f9fa; 
+      padding: 15px; 
+      border-radius: 4px;
+    }
+    .chart-card canvas { max-width: 100%; }
+    .badge { 
+      display: inline-block; 
+      padding: 4px 8px; 
+      border-radius: 4px; 
+      font-size: 12px; 
+      margin: 2px;
+    }
+    .badge-info { background: #17a2b8; color: white; }
+    .badge-success { background: #28a745; color: white; }
+    .badge-warning { background: #ffc107; color: #333; }
+    .help-text { font-size: 12px; color: #666; margin-top: 5px; }
+    .keyboard-hint { font-size: 12px; color: #999; text-align: center; margin-top: 15px; }
+    .footer { 
+      text-align: center; 
+      padding: 20px; 
+      color: #666; 
+      font-size: 12px;
+      border-top: 1px solid #ddd;
+      margin-top: 30px;
+    }
+    .footer a { color: #007bff; text-decoration: none; }
+    .disclaimer { margin-top: 10px; font-style: italic; color: #999; }
+    @media (max-width: 768px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .button-group { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
 </body>
 </html>
