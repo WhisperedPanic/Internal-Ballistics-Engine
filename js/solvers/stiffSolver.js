@@ -37,7 +37,7 @@ function calculateDerivatives_SI(y, params) {
     0.01
   );
   
-  const S_m2 = propellant.S0_m2 * Math.max(0.01, (1 - propellant.alpha_geom * Z_clamped));
+  const S_m2 = (propellant.S0_m2 * 10) * Math.max(0.01, (1 - propellant.alpha_geom * Z_clamped));
   
   const dxdt = v;
   const dvdt = (P_effective_Pa * boreArea_m2) / projectile.mass_kg;
