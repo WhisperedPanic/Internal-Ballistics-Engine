@@ -1,6 +1,6 @@
 // js/solvers/stiffSolver.js
 // Internal Ballistics Engine - Pure-JS Stiff ODE Solver
-// SI units internal, imperial output
+// SI units internal, imperial output for UI
 
 // ============================================================================
 // PHYSICS CORE
@@ -14,12 +14,9 @@ function calculateDerivatives_SI(y, params) {
   const Z_clamped = Math.max(0.001, Math.min(1, Z));
   
   // --- Noble-Abel EOS ---
-  // V_chamber = V0 + A_bore * x - V_solids - V_covolume
   const V_solids_m3 = propellant.mass_kg / propellant.density_kgm3;
   const V_covolume_m3 = propellant.mass_kg * Z_clamped * propellant.eta_m3kg;
   const V_gas_m3 = V0_m3 + (boreArea_m2 * x) - V_solids_m3 - V_covolume_m3;
-  
-  // Prevent negative/zero volume
   const V_effective = Math.max(V_gas_m3, 1e-8);
   
   // P = (F * m * Z) / V_gas
@@ -29,23 +26,33 @@ function calculateDerivatives_SI(y, params) {
   const lagrangeFactor = 1 + propellant.mass_kg / (3 * projectile.mass_kg);
   const P_base_Pa = P_mean_Pa / lagrangeFactor;
   
+  // --- IGNITION MODEL ---
+  // Primer flash provides initial pressure to kickstart combustion
+  const P_ignition_Pa = 5e6; // 5 MPa (~725 PSI)
+  const P_effective_Pa = P_base_Pa + (Z_clamped < 0.01 ? P_ignition_Pa : 0);
+  
   // --- Burn Rate (Vielle's Law) ---
-  const P_MPa = P_base_Pa / 1e6;
+  const P_MPa = P_effective_Pa / 1e6;
   let n_eff = propellant.n;
   if (P_MPa > 300) {
     n_eff = Math.max(0.1, n_eff - 0.02 * (P_MPa - 300) / 100);
   }
-  const r_burn_mps = propellant.B_mps_Pa_n * Math.pow(Math.max(P_base_Pa, 1), n_eff);
+  
+  // Ensure minimum burn rate to prevent stagnation
+  const r_burn_mps = Math.max(
+    propellant.B_mps_Pa_n * Math.pow(P_effective_Pa, n_eff),
+    0.01
+  );
   
   // --- Grain Surface ---
-  const S_m2 = propellant.S0_m2 * Math.max(0, (1 - propellant.alpha_geom * Z_clamped));
+  const S_m2 = propellant.S0_m2 * Math.max(0.01, (1 - propellant.alpha_geom * Z_clamped));
   
   // --- ODEs ---
   const dxdt = v;
-  const dvdt = (P_base_Pa * boreArea_m2) / projectile.mass_kg;
+  const dvdt = (P_effective_Pa * boreArea_m2) / projectile.mass_kg;
   const dZdt = (r_burn_mps * S_m2) / propellant.initialVolume_m3;
   
-  return [dxdt, dvdt, dZdt, P_base_Pa];
+  return [dxdt, dvdt, dZdt, P_effective_Pa];
 }
 
 // ============================================================================
@@ -271,7 +278,15 @@ export async function runSimulation(params) {
   };
 }
 
-export { calculateDerivatives_SI, estimateStiffness };
+// ============================================================================
+// SINGLE EXPORT BLOCK (NO DUPLICATES)
+// ============================================================================
+
+export {
+  runSimulation,
+  calculateDerivatives_SI,
+  estimateStiffness
+};
 
 export const UNITS = {
   PSI_PER_PA: 0.000145038,
@@ -279,3 +294,16 @@ export const UNITS = {
   MM_PER_M: 1000,
   MS_PER_S: 1000
 };
+
+// ============================================================================
+// CONSOLE HELPER
+// ============================================================================
+
+if (typeof window !== 'undefined') {
+  window.ballisticsStiffSolver = {
+    run: runSimulation,
+    derivatives: calculateDerivatives_SI,
+    stiffness: estimateStiffness,
+    units: UNITS
+  };
+}
