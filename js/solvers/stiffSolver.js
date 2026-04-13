@@ -33,10 +33,10 @@ function calculateDerivatives_SI(y, params) {
     n_eff = Math.max(0.1, n_eff - 0.02 * (P_MPa - 300) / 100);
   }
   
-  // INCREASED: Surface area multiplier for faster initial burn
+  // CALIBRATED: Surface area multiplier
   const surfaceMultiplier = 12;
   
-  // INCREASED: B coefficient scaling for higher peak pressure
+  // CALIBRATED: B coefficient scaling
   const B_SCALE_FACTOR = 2.5e7;
   
   // NO CLAMP - natural burn rate
@@ -53,7 +53,7 @@ function calculateDerivatives_SI(y, params) {
 }
 
 // ============================================================================
-// NUMERICAL METHODS
+// NUMERICAL METHODS (Improved Stability)
 // ============================================================================
 
 function estimateStiffness(y, params, dt) {
@@ -71,7 +71,7 @@ function estimateStiffness(y, params, dt) {
   return maxEigenvalue * dt > 0.5;
 }
 
-function implicitEulerStep(y, params, dt, maxIter = 25, tol = 1e-9) {
+function implicitEulerStep(y, params, dt, maxIter = 35, tol = 1e-10) {
   let yNew = [...y];
   
   for (let iter = 0; iter < maxIter; iter++) {
@@ -81,7 +81,8 @@ function implicitEulerStep(y, params, dt, maxIter = 25, tol = 1e-9) {
     
     if (err < tol) break;
     
-    const damping = iter < 5 ? 0.3 : (iter < 10 ? 0.5 : 0.7);
+    // Progressive damping
+    const damping = iter < 10 ? 0.2 : (iter < 20 ? 0.4 : 0.6);
     yNew = yNew.map((val, i) => val - damping * residual[i]);
   }
   
@@ -95,24 +96,28 @@ function rk4Step(y, params, h) {
   const y2 = y.map((v, i) => v + 0.5 * h * k1[i]);
   const k2 = getDerivs(y2);
   const y3 = y.map((v, i) => v + 0.5 * h * k2[i]);
-  const k3 = getDerivs(y3);
+  const k4 = getDerivs(y3);
   const y4 = y.map((v, i) => v + h * k3[i]);
   const k4 = getDerivs(y4);
   
   return y.map((v, i) => v + (h / 6) * (k1[i] + 2*k2[i] + 2*k3[i] + k4[i]));
 }
 
-function adaptiveStep(y, params, dt, tol = 1e-6) {
+function adaptiveStep(y, params, dt, tol = 1e-6, Z_clamped = 0) {
   const isStiff = estimateStiffness(y, params, dt);
   
-  if (isStiff) {
-    const dtImplicit = Math.min(dt, 1e-7);
+  // Force implicit during ignition phase (Z < 0.1)
+  const forceImplicit = Z_clamped < 0.1;
+  
+  if (isStiff || forceImplicit) {
+    // Very small timestep during ignition
+    const dtImplicit = forceImplicit ? Math.min(dt, 5e-8) : Math.min(dt, 1e-7);
     const yNew = implicitEulerStep(y, params, dtImplicit);
     return { 
       yNew, 
-      dtNew: Math.min(dtImplicit * 1.1, 5e-7), 
+      dtNew: forceImplicit ? Math.min(dtImplicit * 1.05, 2e-7) : Math.min(dtImplicit * 1.1, 5e-7), 
       accepted: true, 
-      method: 'implicit' 
+      method: forceImplicit ? 'implicit-ignition' : 'implicit' 
     };
   }
   
@@ -176,10 +181,10 @@ async function runSimulation(params) {
   const results = { t: [], y: [], pressure_Pa: [] };
   let eventResult = null;
   
-  let dt = 1e-9;
+  let dt = 5e-9;  // Start even smaller
   const dtMin = 1e-11;
-  const dtMax = 5e-7;
-  const maxSteps = 100000;
+  const dtMax = 3e-7;  // Reduced max timestep
+  const maxSteps = 150000;
   let stepCount = 0;
   
   const eventFn = (t, y) => y[0] - params.barrelLength_m;
@@ -205,16 +210,17 @@ async function runSimulation(params) {
     do {
       dt = Math.max(dtMin, Math.min(dtMax, dt));
       
-      const currentTol = Z_clamped < 0.05 ? 1e-7 : 1e-6;
+      // Ultra-tight tolerance during ignition
+      const currentTol = Z_clamped < 0.05 ? 1e-8 : (Z_clamped < 0.1 ? 1e-7 : 1e-6);
       
-      stepResult = adaptiveStep(y, params, dt, currentTol);
+      stepResult = adaptiveStep(y, params, dt, currentTol, Z_clamped);
       attempts++;
       
-      if (attempts > 20) {
-        dt = dt * 0.3;
+      if (attempts > 25) {
+        dt = dt * 0.2;  // More aggressive reduction
         if (dt < dtMin) {
           console.warn(`Step adaptation struggling at Z=${Z_clamped.toFixed(3)}, forcing dt=${dtMin}`);
-          const yNew = implicitEulerStep(y, params, dtMin, 30, 1e-10);
+          const yNew = implicitEulerStep(y, params, dtMin, 40, 1e-11);
           stepResult = { yNew, dtNew: dtMin, accepted: true, method: 'forced' };
           break;
         }
