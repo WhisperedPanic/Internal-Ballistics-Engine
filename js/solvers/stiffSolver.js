@@ -22,8 +22,8 @@ function calculateDerivatives_SI(y, params) {
   const lagrangeFactor = 1 + propellant.mass_kg / (3 * projectile.mass_kg);
   const P_base_Pa = P_mean_Pa / lagrangeFactor;
   
-  // REDUCED IGNITION - prevents artificial pressure spike
-  const P_ignition_Pa = 3e6;
+  // IGNITION MODEL - Slightly reduced to prevent excessive early pressure
+  const P_ignition_Pa = 4e6;  // Reduced from 5e6
   const P_effective_Pa = P_base_Pa + (Z_clamped < 0.01 ? P_ignition_Pa : 0);
   
   // BURN RATE (Vielle's Law) - CONVERT TO MPa
@@ -33,11 +33,11 @@ function calculateDerivatives_SI(y, params) {
     n_eff = Math.max(0.1, n_eff - 0.02 * (P_MPa - 300) / 100);
   }
   
-  // REDUCED: Surface area multiplier (more realistic)
-  const surfaceMultiplier = 8;
+  // CALIBRATED: Surface area multiplier
+  const surfaceMultiplier = 10;
   
-  // REDUCED: B coefficient scaling
-  const B_SCALE_FACTOR = 1.5e7;
+  // FINE-TUNED: B coefficient scaling (increased for higher peak pressure)
+  const B_SCALE_FACTOR = 2.2e7;
   
   // NO CLAMP - natural burn rate
   const r_burn_mps = propellant.B_mps_Pa_n * B_SCALE_FACTOR * Math.pow(P_MPa, n_eff);
@@ -71,7 +71,7 @@ function estimateStiffness(y, params, dt) {
   return maxEigenvalue * dt > 0.5;
 }
 
-function implicitEulerStep(y, params, dt, maxIter = 35, tol = 1e-10) {
+function implicitEulerStep(y, params, dt, maxIter = 25, tol = 1e-9) {
   let yNew = [...y];
   
   for (let iter = 0; iter < maxIter; iter++) {
@@ -81,7 +81,7 @@ function implicitEulerStep(y, params, dt, maxIter = 35, tol = 1e-10) {
     
     if (err < tol) break;
     
-    const damping = iter < 10 ? 0.2 : (iter < 20 ? 0.4 : 0.6);
+    const damping = iter < 5 ? 0.3 : (iter < 10 ? 0.5 : 0.7);
     yNew = yNew.map((val, i) => val - damping * residual[i]);
   }
   
@@ -102,19 +102,17 @@ function rk4Step(y, params, h) {
   return y.map((v, i) => v + (h / 6) * (k1[i] + 2*k2[i] + 2*k3[i] + k4[i]));
 }
 
-function adaptiveStep(y, params, dt, tol = 1e-6, Z_clamped = 0) {
+function adaptiveStep(y, params, dt, tol = 1e-6) {
   const isStiff = estimateStiffness(y, params, dt);
   
-  const forceImplicit = Z_clamped < 0.1;
-  
-  if (isStiff || forceImplicit) {
-    const dtImplicit = forceImplicit ? Math.min(dt, 5e-8) : Math.min(dt, 1e-7);
+  if (isStiff) {
+    const dtImplicit = Math.min(dt, 1e-7);
     const yNew = implicitEulerStep(y, params, dtImplicit);
     return { 
       yNew, 
-      dtNew: forceImplicit ? Math.min(dtImplicit * 1.05, 2e-7) : Math.min(dtImplicit * 1.1, 5e-7), 
+      dtNew: Math.min(dtImplicit * 1.1, 5e-7), 
       accepted: true, 
-      method: forceImplicit ? 'implicit-ignition' : 'implicit' 
+      method: 'implicit' 
     };
   }
   
@@ -178,10 +176,10 @@ async function runSimulation(params) {
   const results = { t: [], y: [], pressure_Pa: [] };
   let eventResult = null;
   
-  let dt = 5e-9;
+  let dt = 1e-9;
   const dtMin = 1e-11;
-  const dtMax = 3e-7;
-  const maxSteps = 150000;
+  const dtMax = 5e-7;
+  const maxSteps = 100000;
   let stepCount = 0;
   
   const eventFn = (t, y) => y[0] - params.barrelLength_m;
@@ -207,16 +205,16 @@ async function runSimulation(params) {
     do {
       dt = Math.max(dtMin, Math.min(dtMax, dt));
       
-      const currentTol = Z_clamped < 0.05 ? 1e-8 : (Z_clamped < 0.1 ? 1e-7 : 1e-6);
+      const currentTol = Z_clamped < 0.05 ? 1e-7 : 1e-6;
       
-      stepResult = adaptiveStep(y, params, dt, currentTol, Z_clamped);
+      stepResult = adaptiveStep(y, params, dt, currentTol);
       attempts++;
       
-      if (attempts > 25) {
-        dt = dt * 0.2;
+      if (attempts > 20) {
+        dt = dt * 0.3;
         if (dt < dtMin) {
           console.warn(`Step adaptation struggling at Z=${Z_clamped.toFixed(3)}, forcing dt=${dtMin}`);
-          const yNew = implicitEulerStep(y, params, dtMin, 40, 1e-11);
+          const yNew = implicitEulerStep(y, params, dtMin, 30, 1e-10);
           stepResult = { yNew, dtNew: dtMin, accepted: true, method: 'forced' };
           break;
         }
