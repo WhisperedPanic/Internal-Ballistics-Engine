@@ -36,8 +36,8 @@ function calculateDerivatives_SI(y, params) {
   // CALIBRATED: Surface area multiplier
   const surfaceMultiplier = 10;
   
-  // CALIBRATED: B coefficient scaling (middle ground between 1e7 and 1e8)
-  const B_SCALE_FACTOR = 3e7;
+  // FINAL CALIBRATION: B coefficient scaling
+  const B_SCALE_FACTOR = 2e7;
   
   // NO CLAMP - natural burn rate
   const r_burn_mps = propellant.B_mps_Pa_n * B_SCALE_FACTOR * Math.pow(P_MPa, n_eff);
