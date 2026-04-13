@@ -38,11 +38,11 @@ function calculateDerivatives_SI(y, params) {
   const surfaceMultiplier = 1;
   
   // FINE-TUNED: B coefficient scaling
-  const B_SCALE_FACTOR = 5.92e6; // NEW: Calibrated to match empirically-working values
+  const B_SCALE_FACTOR = 1; // NEW: Calibrated to match empirically-working values
 
   
   // NO CLAMP - natural burn rate
-  const r_burn_mps = propellant.B_mps_Pa_n * B_SCALE_FACTOR * Math.pow(P_MPa, n_eff);
+  const r_burn_mps = propellant.B_mps_Pa_n * Math.pow(P_MPa, n_eff);
   
   const S_m2 = (propellant.S0_m2 * surfaceMultiplier) * Math.max(0.01, (1 - propellant.alpha_geom * Z_clamped));
   
