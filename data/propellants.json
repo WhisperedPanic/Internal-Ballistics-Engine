@@ -6,21 +6,11 @@
     "density_kgm3": 859,
     "F_Jkg": 4201000,
     "n": 0.71,
-    "B_mps_Pa_n": 2.31e-6,
+    "B_mps_Pa_n": 6.22e5,
     "eta_m3kg": 5.99e-5,
     "S0_m2": 0.0105,
     "alpha_geom": 0.37,
-    "initialVolume_m3": 0.000001,
-    "description": "Classic extruded rifle powder. Calibrated from GRT imperial data.",
-    "source": "GRT Community Database - Imperial conversion",
-    "validation": {
-      "burnRateCoeff_imperial": 1.20,
-      "pressureExponent": 0.71,
-      "energyContent_ftlbf_lb": 1405000,
-      "covolume_in3_lb": 0.96,
-      "density_lb_in3": 0.0310,
-      "grainFormFactor": 1
-    }
+    "initialVolume_m3": 0.000001
   },
   {
     "id": "hodgdon_varget",
@@ -29,21 +19,11 @@
     "density_kgm3": 942,
     "F_Jkg": 4216000,
     "n": 0.72,
-    "B_mps_Pa_n": 2.33e-6,
+    "B_mps_Pa_n": 8.47e5,
     "eta_m3kg": 5.99e-5,
     "S0_m2": 0.011,
     "alpha_geom": 0.35,
-    "initialVolume_m3": 0.000001,
-    "description": "Temperature-stable extruded rifle powder.",
-    "source": "GRT Community Database - Imperial conversion",
-    "validation": {
-      "burnRateCoeff_imperial": 1.30,
-      "pressureExponent": 0.72,
-      "energyContent_ftlbf_lb": 1410000,
-      "covolume_in3_lb": 0.96,
-      "density_lb_in3": 0.0340,
-      "grainFormFactor": 1
-    }
+    "initialVolume_m3": 0.000001
   },
   {
     "id": "hodgdon_h4350",
@@ -52,44 +32,11 @@
     "density_kgm3": 831,
     "F_Jkg": 4246000,
     "n": 0.76,
-    "B_mps_Pa_n": 9.43e-7,
+    "B_mps_Pa_n": 3.21e5,
     "eta_m3kg": 5.99e-5,
     "S0_m2": 0.010,
     "alpha_geom": 0.38,
-    "initialVolume_m3": 0.000001,
-    "description": "Slow-burning extruded powder for large rifle cases.",
-    "source": "GRT Community Database - Imperial conversion",
-    "validation": {
-      "burnRateCoeff_imperial": 0.70,
-      "pressureExponent": 0.76,
-      "energyContent_ftlbf_lb": 1420000,
-      "covolume_in3_lb": 0.96,
-      "density_lb_in3": 0.0300,
-      "grainFormFactor": 1
-    }
-  },
-  {
-    "id": "hodgdon_h4831",
-    "name": "Hodgdon H4831",
-    "type": "extruded",
-    "density_kgm3": 817,
-    "F_Jkg": 4276000,
-    "n": 0.79,
-    "B_mps_Pa_n": 4.97e-7,
-    "eta_m3kg": 5.99e-5,
-    "S0_m2": 0.012,
-    "alpha_geom": 0.36,
-    "initialVolume_m3": 0.000001,
-    "description": "Very slow extruded powder for magnum rifle cartridges.",
-    "source": "GRT Community Database - Imperial conversion",
-    "validation": {
-      "burnRateCoeff_imperial": 0.48,
-      "pressureExponent": 0.79,
-      "energyContent_ftlbf_lb": 1430000,
-      "covolume_in3_lb": 0.96,
-      "density_lb_in3": 0.0295,
-      "grainFormFactor": 1
-    }
+    "initialVolume_m3": 0.000001
   },
   {
     "id": "vihtavuori_n140",
@@ -98,89 +45,10 @@
     "density_kgm3": 859,
     "F_Jkg": 4201000,
     "n": 0.70,
-    "B_mps_Pa_n": 2.39e-6,
+    "B_mps_Pa_n": 7.21e5,
     "eta_m3kg": 5.99e-5,
     "S0_m2": 0.0108,
     "alpha_geom": 0.36,
-    "initialVolume_m3": 0.000001,
-    "description": "Finnish extruded powder. Excellent temperature stability.",
-    "source": "GRT Community Database - Imperial conversion",
-    "validation": {
-      "burnRateCoeff_imperial": 1.15,
-      "pressureExponent": 0.70,
-      "energyContent_ftlbf_lb": 1405000,
-      "covolume_in3_lb": 0.96,
-      "density_lb_in3": 0.0310,
-      "grainFormFactor": 1
-    }
-  },
-  {
-    "id": "vihtavuori_n150",
-    "name": "Vihtavuori N150",
-    "type": "extruded",
-    "density_kgm3": 845,
-    "F_Jkg": 4231000,
-    "n": 0.74,
-    "B_mps_Pa_n": 9.51e-7,
-    "eta_m3kg": 5.99e-5,
-    "S0_m2": 0.0102,
-    "alpha_geom": 0.37,
-    "initialVolume_m3": 0.000001,
-    "description": "Slightly slower than N140. Ideal for 6.5mm/.308.",
-    "source": "GRT Community Database - Imperial conversion",
-    "validation": {
-      "burnRateCoeff_imperial": 0.62,
-      "pressureExponent": 0.74,
-      "energyContent_ftlbf_lb": 1415000,
-      "covolume_in3_lb": 0.96,
-      "density_lb_in3": 0.0305,
-      "grainFormFactor": 1
-    }
-  },
-  {
-    "id": "alliant_reloader16",
-    "name": "Alliant Reloder 16",
-    "type": "extruded",
-    "density_kgm3": 845,
-    "F_Jkg": 4231000,
-    "n": 0.75,
-    "B_mps_Pa_n": 1.03e-6,
-    "eta_m3kg": 5.99e-5,
-    "S0_m2": 0.010,
-    "alpha_geom": 0.37,
-    "initialVolume_m3": 0.000001,
-    "description": "Modern extruded powder with excellent temperature stability.",
-    "source": "GRT Community Database - Imperial conversion",
-    "validation": {
-      "burnRateCoeff_imperial": 0.72,
-      "pressureExponent": 0.75,
-      "energyContent_ftlbf_lb": 1415000,
-      "covolume_in3_lb": 0.96,
-      "density_lb_in3": 0.0305,
-      "grainFormFactor": 1
-    }
-  },
-  {
-    "id": "alliant_reloader22",
-    "name": "Alliant Reloder 22",
-    "type": "extruded",
-    "density_kgm3": 817,
-    "F_Jkg": 4276000,
-    "n": 0.79,
-    "B_mps_Pa_n": 4.66e-7,
-    "eta_m3kg": 5.99e-5,
-    "S0_m2": 0.012,
-    "alpha_geom": 0.36,
-    "initialVolume_m3": 0.000001,
-    "description": "Slow extruded powder for magnum rifle cartridges.",
-    "source": "GRT Community Database - Imperial conversion",
-    "validation": {
-      "burnRateCoeff_imperial": 0.45,
-      "pressureExponent": 0.79,
-      "energyContent_ftlbf_lb": 1435000,
-      "covolume_in3_lb": 0.96,
-      "density_lb_in3": 0.0295,
-      "grainFormFactor": 1
-    }
+    "initialVolume_m3": 0.000001
   }
 ]
