@@ -53,7 +53,7 @@ function calculateDerivatives_SI(y, params) {
 }
 
 // ============================================================================
-// NUMERICAL METHODS (Improved Stability)
+// NUMERICAL METHODS
 // ============================================================================
 
 function estimateStiffness(y, params, dt) {
@@ -81,7 +81,6 @@ function implicitEulerStep(y, params, dt, maxIter = 35, tol = 1e-10) {
     
     if (err < tol) break;
     
-    // Progressive damping
     const damping = iter < 10 ? 0.2 : (iter < 20 ? 0.4 : 0.6);
     yNew = yNew.map((val, i) => val - damping * residual[i]);
   }
@@ -96,7 +95,7 @@ function rk4Step(y, params, h) {
   const y2 = y.map((v, i) => v + 0.5 * h * k1[i]);
   const k2 = getDerivs(y2);
   const y3 = y.map((v, i) => v + 0.5 * h * k2[i]);
-  const k4 = getDerivs(y3);
+  const k3 = getDerivs(y3);  // FIXED: was incorrectly named k4
   const y4 = y.map((v, i) => v + h * k3[i]);
   const k4 = getDerivs(y4);
   
@@ -106,11 +105,9 @@ function rk4Step(y, params, h) {
 function adaptiveStep(y, params, dt, tol = 1e-6, Z_clamped = 0) {
   const isStiff = estimateStiffness(y, params, dt);
   
-  // Force implicit during ignition phase (Z < 0.1)
   const forceImplicit = Z_clamped < 0.1;
   
   if (isStiff || forceImplicit) {
-    // Very small timestep during ignition
     const dtImplicit = forceImplicit ? Math.min(dt, 5e-8) : Math.min(dt, 1e-7);
     const yNew = implicitEulerStep(y, params, dtImplicit);
     return { 
@@ -181,9 +178,9 @@ async function runSimulation(params) {
   const results = { t: [], y: [], pressure_Pa: [] };
   let eventResult = null;
   
-  let dt = 5e-9;  // Start even smaller
+  let dt = 5e-9;
   const dtMin = 1e-11;
-  const dtMax = 3e-7;  // Reduced max timestep
+  const dtMax = 3e-7;
   const maxSteps = 150000;
   let stepCount = 0;
   
@@ -210,14 +207,13 @@ async function runSimulation(params) {
     do {
       dt = Math.max(dtMin, Math.min(dtMax, dt));
       
-      // Ultra-tight tolerance during ignition
       const currentTol = Z_clamped < 0.05 ? 1e-8 : (Z_clamped < 0.1 ? 1e-7 : 1e-6);
       
       stepResult = adaptiveStep(y, params, dt, currentTol, Z_clamped);
       attempts++;
       
       if (attempts > 25) {
-        dt = dt * 0.2;  // More aggressive reduction
+        dt = dt * 0.2;
         if (dt < dtMin) {
           console.warn(`Step adaptation struggling at Z=${Z_clamped.toFixed(3)}, forcing dt=${dtMin}`);
           const yNew = implicitEulerStep(y, params, dtMin, 40, 1e-11);
