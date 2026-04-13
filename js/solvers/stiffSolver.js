@@ -22,8 +22,8 @@ function calculateDerivatives_SI(y, params) {
   const lagrangeFactor = 1 + propellant.mass_kg / (3 * projectile.mass_kg);
   const P_base_Pa = P_mean_Pa / lagrangeFactor;
   
-  // IGNITION MODEL
-  const P_ignition_Pa = 4e6;
+  // REDUCED IGNITION - prevents artificial pressure spike
+  const P_ignition_Pa = 3e6;
   const P_effective_Pa = P_base_Pa + (Z_clamped < 0.01 ? P_ignition_Pa : 0);
   
   // BURN RATE (Vielle's Law) - CONVERT TO MPa
@@ -33,11 +33,11 @@ function calculateDerivatives_SI(y, params) {
     n_eff = Math.max(0.1, n_eff - 0.02 * (P_MPa - 300) / 100);
   }
   
-  // CALIBRATED: Surface area multiplier
-  const surfaceMultiplier = 12;
+  // REDUCED: Surface area multiplier (more realistic)
+  const surfaceMultiplier = 8;
   
-  // CALIBRATED: B coefficient scaling
-  const B_SCALE_FACTOR = 2.5e7;
+  // REDUCED: B coefficient scaling
+  const B_SCALE_FACTOR = 1.5e7;
   
   // NO CLAMP - natural burn rate
   const r_burn_mps = propellant.B_mps_Pa_n * B_SCALE_FACTOR * Math.pow(P_MPa, n_eff);
@@ -95,7 +95,7 @@ function rk4Step(y, params, h) {
   const y2 = y.map((v, i) => v + 0.5 * h * k1[i]);
   const k2 = getDerivs(y2);
   const y3 = y.map((v, i) => v + 0.5 * h * k2[i]);
-  const k3 = getDerivs(y3);  // FIXED: was incorrectly named k4
+  const k3 = getDerivs(y3);
   const y4 = y.map((v, i) => v + h * k3[i]);
   const k4 = getDerivs(y4);
   
