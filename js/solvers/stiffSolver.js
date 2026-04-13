@@ -22,8 +22,8 @@ function calculateDerivatives_SI(y, params) {
   const lagrangeFactor = 1 + propellant.mass_kg / (3 * projectile.mass_kg);
   const P_base_Pa = P_mean_Pa / lagrangeFactor;
   
-  // IGNITION MODEL - Slightly reduced to prevent excessive early pressure
-  const P_ignition_Pa = 4e6;  // Reduced from 5e6
+  // IGNITION MODEL
+  const P_ignition_Pa = 4e6;
   const P_effective_Pa = P_base_Pa + (Z_clamped < 0.01 ? P_ignition_Pa : 0);
   
   // BURN RATE (Vielle's Law) - CONVERT TO MPa
@@ -33,11 +33,11 @@ function calculateDerivatives_SI(y, params) {
     n_eff = Math.max(0.1, n_eff - 0.02 * (P_MPa - 300) / 100);
   }
   
-  // CALIBRATED: Surface area multiplier
-  const surfaceMultiplier = 10;
+  // INCREASED: Surface area multiplier for faster initial burn
+  const surfaceMultiplier = 12;
   
-  // FINE-TUNED: B coefficient scaling (increased for higher peak pressure)
-  const B_SCALE_FACTOR = 2.2e7;
+  // INCREASED: B coefficient scaling for higher peak pressure
+  const B_SCALE_FACTOR = 2.5e7;
   
   // NO CLAMP - natural burn rate
   const r_burn_mps = propellant.B_mps_Pa_n * B_SCALE_FACTOR * Math.pow(P_MPa, n_eff);
